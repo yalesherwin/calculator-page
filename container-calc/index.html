@@ -198,6 +198,20 @@
       }).join('');
     }
 
+    function buildLoadedCells(result) {
+      const cells = [];
+      let remaining = result.total || 0;
+      for (let z = 0; z < result.layers && remaining > 0; z++) {
+        for (let y = 0; y < result.rows && remaining > 0; y++) {
+          for (let x = 0; x < result.cols && remaining > 0; x++) {
+            cells.push({ x, y, z });
+            remaining--;
+          }
+        }
+      }
+      return cells;
+    }
+
     function drawIso(result) {
       const c = ids('isoCanvas');
       const ctx = c.getContext('2d');
@@ -211,9 +225,11 @@
         return;
       }
 
-      const shownCols = Math.min(result.cols, 6);
-      const shownRows = Math.min(result.rows, 4);
-      const shownLayers = Math.min(result.layers, 4);
+      const loadedCells = buildLoadedCells(result);
+      const maxCols = Math.min(result.cols, 6);
+      const maxRows = Math.min(result.rows, 4);
+      const maxLayers = Math.min(result.layers, 4);
+      const visibleCells = loadedCells.filter(cell => cell.x < maxCols && cell.y < maxRows && cell.z < maxLayers);
       const totalIsoW = (result.container.l + result.container.w) * 0.55;
       const totalIsoH = (result.container.l + result.container.w) * 0.18 + result.container.h * 0.75;
       const scale = Math.min((c.width - 120) / totalIsoW, (c.height - 90) / totalIsoH);
@@ -271,29 +287,26 @@
 
       drawBox(0, 0, 0, result.container.l, result.container.w, result.container.h, 'rgba(100,160,255,.08)');
 
-      for (let z = 0; z < shownLayers; z++) {
-        for (let y = shownRows - 1; y >= 0; y--) {
-          for (let x = 0; x < shownCols; x++) {
-            const hue = (x * 27 + y * 39 + z * 51) % 360;
-            drawBox(
-              x * result.bl,
-              y * result.bw,
-              z * result.bh,
-              result.bl,
-              result.bw,
-              result.bh,
-              `hsla(${hue}, 85%, 68%, 0.95)`
-            );
-          }
-        }
+      visibleCells.sort((a, b) => (a.z - b.z) || (b.y - a.y) || (a.x - b.x));
+      for (const cell of visibleCells) {
+        const hue = (cell.x * 27 + cell.y * 39 + cell.z * 51) % 360;
+        drawBox(
+          cell.x * result.bl,
+          cell.y * result.bw,
+          cell.z * result.bh,
+          result.bl,
+          result.bw,
+          result.bh,
+          `hsla(${hue}, 85%, 68%, 0.95)`
+        );
       }
 
       ctx.fillStyle = '#17324f';
       ctx.font = '20px sans-serif';
-      ctx.fillText(`真实比例3D：${shownCols}列 × ${shownRows}排 × ${shownLayers}层`, 28, 34);
+      ctx.fillText(`真实比例3D：图中展示 ${visibleCells.length} 件 / 实际总数 ${result.total} 件`, 28, 34);
       ctx.font = '16px sans-serif';
       ctx.fillText(`实际排布：${result.cols}列 × ${result.rows}排 × ${result.layers}层`, 28, 60);
-      ctx.fillText(`按真实长宽高比例绘制；为便于展示，仅截取前部局部视图`, 28, 84);
+      ctx.fillText(`按真实长宽高比例绘制，图中数量与计算结果一致`, 28, 84);
     }
 
     function drawSide(result) {
@@ -315,9 +328,16 @@
       ctx.strokeStyle = '#17324f';
       ctx.lineWidth = 3;
       ctx.strokeRect(x0, y0, result.container.l * scale, result.container.h * scale);
-      const shownCols = Math.min(result.cols, 18);
+
+      const loadedCells = buildLoadedCells(result);
+      const visibleCols = Math.min(result.cols, 18);
+      const occupied = new Set();
+      for (const cell of loadedCells) {
+        if (cell.x < visibleCols) occupied.add(`${cell.x}-${cell.z}`);
+      }
       for (let layer = 0; layer < result.layers; layer++) {
-        for (let col = 0; col < shownCols; col++) {
+        for (let col = 0; col < visibleCols; col++) {
+          if (!occupied.has(`${col}-${layer}`)) continue;
           const x = x0 + col * result.bl * scale;
           const y = y0 + (result.container.h - (layer + 1) * result.bh) * scale;
           ctx.fillStyle = `hsl(${(layer * 40 + col * 10) % 360} 80% 70%)`;
@@ -326,7 +346,7 @@
       }
       ctx.fillStyle = '#234';
       ctx.font = '20px sans-serif';
-      ctx.fillText(`示意 ${shownCols} 列 × ${result.layers} 层`, 32, 32);
+      ctx.fillText(`侧视图按实际装载数量绘制，总计 ${result.total} 件`, 32, 32);
     }
 
     function calculate() {
