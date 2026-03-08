@@ -3,148 +3,183 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>集装箱装箱计算器</title>
+  <title>Container Vision Pro</title>
   <style>
     :root {
-      --bg: #0b1020;
-      --card: rgba(18, 27, 52, .9);
-      --line: rgba(255,255,255,.08);
-      --text: #eef4ff;
-      --muted: #9fb2d9;
-      --accent: #4da3ff;
-      --green: #2ecc71;
-      --orange: #ffb54d;
+      --bg: #0a1020;
+      --panel: rgba(14, 22, 42, 0.82);
+      --panel-2: rgba(255,255,255,0.04);
+      --line: rgba(255,255,255,0.08);
+      --text: #eff5ff;
+      --muted: #9eb0d2;
+      --blue: #5ca8ff;
+      --cyan: #6ce6ff;
+      --green: #3ddc97;
+      --orange: #ffbe5c;
+      --red: #ff7272;
+      --shadow: 0 18px 50px rgba(0,0,0,.3);
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
-      background: linear-gradient(180deg, #0b1020, #111931 55%, #0e1428);
       color: var(--text);
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(92,168,255,.18), transparent 28%),
+        radial-gradient(circle at top right, rgba(108,230,255,.12), transparent 24%),
+        linear-gradient(180deg, #08101f, #0d1427 42%, #09111f);
     }
-    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px; }
-    h1 { margin: 0 0 8px; font-size: 32px; }
-    .sub { color: var(--muted); margin-bottom: 22px; }
-    .grid { display: grid; grid-template-columns: 390px 1fr; gap: 20px; }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 18px;
-      box-shadow: 0 18px 48px rgba(0,0,0,.28);
-      backdrop-filter: blur(8px);
+    .wrap { max-width: 1440px; margin: 0 auto; padding: 24px; }
+    .hero {
+      display: flex; justify-content: space-between; gap: 18px; align-items: end; margin-bottom: 20px;
     }
-    .section-title { font-size: 17px; margin: 0 0 14px; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+    .hero h1 { margin: 0; font-size: 34px; letter-spacing: .2px; }
+    .hero p { margin: 10px 0 0; color: var(--muted); max-width: 760px; line-height: 1.7; }
+    .badge {
+      border: 1px solid rgba(108,230,255,.25); color: #c9f8ff; background: rgba(108,230,255,.08);
+      padding: 10px 14px; border-radius: 999px; font-size: 13px; white-space: nowrap;
+    }
+    .layout { display: grid; grid-template-columns: 360px 1fr; gap: 20px; }
+    .panel {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow);
+      backdrop-filter: blur(10px); overflow: hidden;
+    }
+    .panel-inner { padding: 18px; }
+    .section-title { margin: 0 0 14px; font-size: 17px; }
+    .fields { display: grid; gap: 12px; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    label { display:block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
     input, select, button {
-      width: 100%; border-radius: 12px; border: 1px solid var(--line);
-      background: rgba(255,255,255,.04); color: var(--text); padding: 12px 14px; font-size: 15px;
+      width: 100%; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.04);
+      color: var(--text); padding: 12px 14px; font-size: 15px;
     }
     button {
-      background: linear-gradient(90deg, #2684ff, #4db8ff);
-      border: none; font-weight: 700; cursor: pointer;
-      color: white;
+      cursor: pointer; font-weight: 700; border: none;
+      background: linear-gradient(90deg, #4193ff, #67d8ff); color: white;
     }
     button.secondary { background: rgba(255,255,255,.08); }
-    .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
-    .tips { font-size: 12px; color: var(--muted); line-height: 1.6; margin-top: 12px; }
-    .results { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
-    .result-box { border: 1px solid var(--line); border-radius: 16px; padding: 14px; background: rgba(255,255,255,.03); }
-    .result-box h3 { margin: 0 0 8px; font-size: 16px; }
-    .big { font-size: 30px; font-weight: 800; color: #fff; }
-    .ok { color: var(--green); }
-    .warn { color: var(--orange); }
-    .meta { color: var(--muted); font-size: 13px; line-height: 1.55; }
-    .canvases { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    canvas { width: 100%; background: #f8fbff; border-radius: 16px; border: 1px solid rgba(0,0,0,.06); }
-    .legend { font-size: 13px; color: var(--muted); margin-top: 8px; }
-    .footer-note { margin-top: 16px; font-size: 12px; color: var(--muted); line-height: 1.7; }
-    @media (max-width: 980px) {
-      .grid, .canvases, .results { grid-template-columns: 1fr; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+    .tips { margin-top: 14px; color: var(--muted); font-size: 12px; line-height: 1.75; }
+    .metrics {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;
+    }
+    .metric {
+      background: var(--panel-2); border: 1px solid var(--line); border-radius: 18px; padding: 14px;
+    }
+    .metric .k { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+    .metric .v { font-size: 28px; font-weight: 800; }
+    .card-grid { display:grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 16px; }
+    .container-card {
+      background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 18px; padding: 14px; cursor: pointer;
+      transition: .18s ease;
+    }
+    .container-card.active { outline: 2px solid var(--blue); background: rgba(92,168,255,.08); }
+    .container-card:hover { transform: translateY(-1px); }
+    .container-card h3 { margin: 0 0 8px; font-size: 16px; }
+    .count { font-size: 34px; font-weight: 800; margin-bottom: 4px; }
+    .ok { color: var(--green); } .warn { color: var(--orange); } .bad { color: var(--red); }
+    .meta { color: var(--muted); font-size: 13px; line-height: 1.6; }
+    .stage { display: grid; grid-template-columns: 1.15fr .85fr; gap: 16px; }
+    .canvas-panel { background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 20px; padding: 12px; }
+    .canvas-title { display:flex; justify-content:space-between; gap:8px; align-items:center; margin-bottom: 10px; }
+    .canvas-title h3 { margin:0; font-size: 16px; }
+    .canvas-title .small { color: var(--muted); font-size: 12px; }
+    canvas { width: 100%; background: linear-gradient(180deg, #f9fbff, #edf3fb); border-radius: 16px; display:block; }
+    .subgrid { display:grid; gap:16px; }
+    .legend { color: var(--muted); font-size: 13px; line-height: 1.7; margin-top: 10px; }
+    .footer-note { margin-top: 14px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+    @media (max-width: 1100px) {
+      .layout, .stage, .metrics, .card-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>集装箱装箱计算器</h1>
-    <div class="sub">输入单件货物尺寸 / 重量，自动计算 20GP、40GP、40HQ（高柜）能装多少件，并生成简易装箱图。</div>
+    <div class="hero">
+      <div>
+        <h1>Container Vision Pro</h1>
+        <p>面向客户演示的高端装箱网站。输入货物尺寸后，自动计算 20GP / 40GP / 40HQ 最大规则装箱数量，并输出真实比例客户演示图、标准装箱图与空间利用率。</p>
+      </div>
+      <div class="badge">Top-tier UI · Real-proportion visuals · Client demo</div>
+    </div>
 
-    <div class="grid">
-      <div class="card">
-        <h2 class="section-title">货物参数</h2>
-        <div class="row">
-          <div>
-            <label>长度 (mm)</label>
-            <input id="l" type="number" value="600" min="1" step="1" />
+    <div class="layout">
+      <div class="panel">
+        <div class="panel-inner">
+          <h2 class="section-title">货物参数</h2>
+          <div class="fields">
+            <div class="row2">
+              <div><label>长度 (mm)</label><input id="l" type="number" value="600" /></div>
+              <div><label>宽度 (mm)</label><input id="w" type="number" value="400" /></div>
+            </div>
+            <div class="row2">
+              <div><label>高度 (mm)</label><input id="h" type="number" value="350" /></div>
+              <div><label>单件重量 (kg)</label><input id="weight" type="number" value="12" step="0.1" /></div>
+            </div>
+            <div class="row2">
+              <div>
+                <label>装箱方式</label>
+                <select id="mode">
+                  <option value="best">自动选择最优摆放</option>
+                  <option value="upright">保持正放</option>
+                </select>
+              </div>
+              <div><label>预留空间 (%)</label><input id="reserve" type="number" value="5" min="0" max="30" /></div>
+            </div>
+            <div class="actions">
+              <button id="calc">立即计算</button>
+              <button class="secondary" id="demo">示例数据</button>
+            </div>
           </div>
-          <div>
-            <label>宽度 (mm)</label>
-            <input id="w" type="number" value="400" min="1" step="1" />
+          <div class="tips">
+            1. 当前版本采用 <b>规则极限装箱</b>：按可旋转方向中产出最大件数的排布方案。<br>
+            2. 图像为 <b>客户演示级真实比例效果图</b>，不是简单线框。<br>
+            3. 大批量时默认展示前部/单层放大，更适合手机查看。
           </div>
-        </div>
-        <div class="row">
-          <div>
-            <label>高度 (mm)</label>
-            <input id="h" type="number" value="350" min="1" step="1" />
-          </div>
-          <div>
-            <label>单件重量 (kg，可选)</label>
-            <input id="weight" type="number" value="12" min="0" step="0.1" />
-          </div>
-        </div>
-        <div class="row">
-          <div>
-            <label>装箱方式</label>
-            <select id="mode">
-              <option value="best">自动选择最优摆放</option>
-              <option value="upright">保持正放（高=输入高度）</option>
-            </select>
-          </div>
-          <div>
-            <label>预留空间 (%)</label>
-            <input id="reserve" type="number" value="5" min="0" max="30" step="1" />
-          </div>
-        </div>
-        <div class="btns">
-          <button id="calc">立即计算</button>
-          <button class="secondary" id="demo">示例数据</button>
-        </div>
-        <div class="tips">
-          说明：<br>
-          1. 计算默认按规则排布与尺寸约束，适合快速估算。<br>
-          2. 输入单位已改为 <b>mm</b>，系统会自动换算。<br>
-          3. 若填写重量，会同时校验集装箱载重上限。<br>
         </div>
       </div>
 
-      <div class="card">
-        <div class="results" id="results"></div>
-        <div class="legend" id="selectedNotice" style="margin: -2px 0 14px; color:#9fb2d9;"></div>
-        <div class="legend" style="margin-bottom:12px;color:#9fb2d9;">已升级为客户演示版：自动展示 <b>单层放大图 + 侧视图 + 正视图</b>，手机上更直观。</div>
-        <div class="canvases" style="grid-template-columns: 1fr;">
-          <div>
-            <h2 class="section-title">真实货物装箱效果图（客户演示）</h2>
-            <canvas id="realCanvas" width="720" height="420"></canvas>
-            <div class="legend" id="realLegend"></div>
+      <div class="panel">
+        <div class="panel-inner">
+          <div class="metrics">
+            <div class="metric"><div class="k">当前展示柜型</div><div class="v" id="mContainer">20GP</div></div>
+            <div class="metric"><div class="k">可装件数</div><div class="v" id="mCount">0</div></div>
+            <div class="metric"><div class="k">空间利用率</div><div class="v" id="mFill">0%</div></div>
+            <div class="metric"><div class="k">摆放方向</div><div class="v" id="mDims" style="font-size:18px;line-height:1.35;">-</div></div>
           </div>
-          <div>
-            <h2 class="section-title">标准装箱图（俯视单层放大图）</h2>
-            <canvas id="topCanvas" width="720" height="420"></canvas>
-            <div class="legend" id="topLegend"></div>
+
+          <div class="card-grid" id="cards"></div>
+
+          <div class="stage">
+            <div class="canvas-panel">
+              <div class="canvas-title">
+                <h3>真实货物装箱图</h3>
+                <div class="small" id="heroNote">客户演示视图</div>
+              </div>
+              <canvas id="heroCanvas" width="900" height="520"></canvas>
+              <div class="legend" id="heroLegend"></div>
+            </div>
+            <div class="subgrid">
+              <div class="canvas-panel">
+                <div class="canvas-title"><h3>单层放大图</h3><div class="small">Top View</div></div>
+                <canvas id="topCanvas" width="700" height="250"></canvas>
+                <div class="legend" id="topLegend"></div>
+              </div>
+              <div class="canvas-panel">
+                <div class="canvas-title"><h3>侧视图</h3><div class="small">Side View</div></div>
+                <canvas id="sideCanvas" width="700" height="250"></canvas>
+                <div class="legend" id="sideLegend"></div>
+              </div>
+              <div class="canvas-panel">
+                <div class="canvas-title"><h3>正视图</h3><div class="small">Front View</div></div>
+                <canvas id="frontCanvas" width="700" height="250"></canvas>
+                <div class="legend" id="frontLegend"></div>
+              </div>
+            </div>
           </div>
-          <div>
-            <h2 class="section-title">标准装箱图（侧视图）</h2>
-            <canvas id="sideCanvas" width="720" height="320"></canvas>
-            <div class="legend" id="sideLegend"></div>
-          </div>
-          <div>
-            <h2 class="section-title">标准装箱图（正视图）</h2>
-            <canvas id="frontCanvas" width="720" height="320"></canvas>
-            <div class="legend" id="frontLegend"></div>
-          </div>
+
+          <div class="footer-note" id="summary"></div>
         </div>
-        <div class="footer-note" id="summary"></div>
       </div>
     </div>
   </div>
@@ -156,313 +191,151 @@
       { key: '40HQ', name: '40HQ / 高柜', l: 12030, w: 2350, h: 2690, maxKg: 26500 }
     ];
 
-    const ids = id => document.getElementById(id);
-    let currentResults = [];
-    let selectedContainerKey = '20GP';
+    const $ = id => document.getElementById(id);
+    let results = [];
+    let selectedKey = '20GP';
 
-    function permutations(dims) {
-      const [a, b, c] = dims;
-      return [
-        [a,b,c],[a,c,b],[b,a,c],[b,c,a],[c,a,b],[c,b,a]
-      ].filter((v, i, arr) => arr.findIndex(x => x.join(',') === v.join(',')) === i);
-    }
+    const permutations = ([a,b,c]) => [[a,b,c],[a,c,b],[b,a,c],[b,c,a],[c,a,b],[c,b,a]]
+      .filter((v,i,arr)=>arr.findIndex(x=>x.join(',')===v.join(','))===i);
 
-    function calcFor(container, box, mode, reservePct) {
-      const factor = Math.max(0.7, 1 - reservePct / 100);
-      const dims = mode === 'upright' ? [[box.l, box.w, box.h], [box.w, box.l, box.h]] : permutations([box.l, box.w, box.h]);
+    function calcOne(container, box, mode, reservePct) {
+      const dims = mode === 'upright' ? [[box.l, box.w, box.h],[box.w, box.l, box.h]] : permutations([box.l,box.w,box.h]);
       let best = null;
-
-      for (const [bl, bw, bh] of dims) {
+      for (const [bl,bw,bh] of dims) {
         if (bl > container.l || bw > container.w || bh > container.h) continue;
         const cols = Math.floor(container.l / bl);
         const rows = Math.floor(container.w / bw);
         const layers = Math.floor(container.h / bh);
-        const total = Math.floor(cols * rows * layers * factor);
-        const plan = { bl, bw, bh, cols, rows, layers, total };
-        if (!best || plan.total > best.total) best = plan;
+        let total = cols * rows * layers;
+        total = Math.floor(total * Math.max(0.7, 1 - reservePct / 100));
+        if (!best || total > best.total) best = { container, bl,bw,bh,cols,rows,layers,total, fits: total > 0 };
       }
-
-      if (!best) return { container, total: 0, fits: false };
-
-      let weightLimited = false;
+      if (!best) return { container, total:0, fits:false };
       if (box.weight > 0) {
-        const maxByWeight = Math.floor(container.maxKg / box.weight);
-        if (maxByWeight < best.total) {
-          best.total = maxByWeight;
-          weightLimited = true;
-        }
+        const byWeight = Math.floor(container.maxKg / box.weight);
+        if (byWeight < best.total) { best.total = byWeight; best.weightLimited = true; }
       }
-      return { container, ...best, fits: best.total > 0, weightLimited };
+      best.usedVolume = best.total * box.l * box.w * box.h;
+      best.fillRate = (best.usedVolume / (container.l * container.w * container.h)) * 100;
+      return best;
     }
 
-    function renderResults(results) {
-      currentResults = results;
-      if (!results.find(r => r.container.key === selectedContainerKey)) {
-        selectedContainerKey = results[0]?.container.key || '20GP';
-      }
-      ids('results').innerHTML = results.map(r => {
-        const status = r.fits ? (r.weightLimited ? '受重量限制' : '可装') : '放不下';
-        const cls = r.fits ? (r.weightLimited ? 'warn' : 'ok') : 'warn';
-        const active = r.container.key === selectedContainerKey;
-        return `
-          <div class="result-box" data-key="${r.container.key}" style="cursor:pointer; ${active ? 'outline:2px solid #4da3ff; box-shadow:0 0 0 3px rgba(77,163,255,.12) inset;' : ''}">
-            <h3>${r.container.name}</h3>
-            <div class="big">${r.total || 0} 件</div>
-            <div class="meta ${cls}">${status}</div>
-            <div class="meta">尺寸：${r.container.l}×${r.container.w}×${r.container.h} mm</div>
-            <div class="meta">摆放：${r.bl ? `${r.bl}×${r.bw}×${r.bh} mm` : '-'}</div>
-            <div class="meta">排布：${r.cols || 0} × ${r.rows || 0} × ${r.layers || 0}</div>
-          </div>`;
-      }).join('');
-      [...ids('results').querySelectorAll('.result-box')].forEach(el => {
-        el.addEventListener('click', () => {
-          selectedContainerKey = el.dataset.key;
-          renderResults(currentResults);
-          renderSelected();
-        });
-      });
+    function buildCells(r) {
+      const arr = []; let remain = r.total || 0;
+      for (let z=0; z<r.layers && remain>0; z++) for (let y=0; y<r.rows && remain>0; y++) for (let x=0; x<r.cols && remain>0; x++) { arr.push({x,y,z}); remain--; }
+      return arr;
     }
 
-    function buildLoadedCells(result) {
-      const cells = [];
-      let remaining = result.total || 0;
-      for (let z = 0; z < result.layers && remaining > 0; z++) {
-        for (let y = 0; y < result.rows && remaining > 0; y++) {
-          for (let x = 0; x < result.cols && remaining > 0; x++) {
-            cells.push({ x, y, z });
-            remaining--;
-          }
-        }
-      }
-      return cells;
+    function renderCards() {
+      $('cards').innerHTML = results.map(r => `
+        <div class="container-card ${r.container.key===selectedKey?'active':''}" data-key="${r.container.key}">
+          <h3>${r.container.name}</h3>
+          <div class="count ${r.fits ? 'ok' : 'bad'}">${r.total || 0}</div>
+          <div class="meta">${r.fits ? '可装' : '放不下'}</div>
+          <div class="meta">摆放：${r.bl ? `${r.bl} × ${r.bw} × ${r.bh} mm` : '-'}</div>
+          <div class="meta">排布：${r.cols || 0} × ${r.rows || 0} × ${r.layers || 0}</div>
+          <div class="meta">利用率：${r.fillRate ? r.fillRate.toFixed(1) : 0}%</div>
+        </div>
+      `).join('');
+      [...$('cards').querySelectorAll('.container-card')].forEach(el => el.onclick = () => { selectedKey = el.dataset.key; renderAll(); });
     }
 
-    function drawTop(result) {
-      const c = ids('topCanvas');
-      const ctx = c.getContext('2d');
-      ctx.clearRect(0, 0, c.width, c.height);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, c.width, c.height);
-      if (!result || !result.fits) {
-        ctx.fillStyle = '#234';
-        ctx.font = '28px sans-serif';
-        ctx.fillText('该货物无法放入所选集装箱', 120, 160);
-        return;
-      }
-      const pad = 26;
-      const scale = Math.min((c.width - pad * 2) / result.container.l, (c.height - pad * 2) / result.container.w);
-      const x0 = (c.width - result.container.l * scale) / 2;
-      const y0 = (c.height - result.container.w * scale) / 2;
-      ctx.fillStyle = '#f2f5fb';
-      ctx.fillRect(x0, y0, result.container.l * scale, result.container.w * scale);
-      ctx.strokeStyle = '#17324f';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x0, y0, result.container.l * scale, result.container.w * scale);
-
-      const loadedCells = buildLoadedCells(result).filter(cell => cell.z === 0);
-      for (const cell of loadedCells) {
-        const x = x0 + cell.x * result.bl * scale;
-        const y = y0 + cell.y * result.bw * scale;
-        ctx.fillStyle = `hsl(${(cell.x * 19 + cell.y * 37) % 360} 75% 68%)`;
-        ctx.fillRect(x + 1, y + 1, result.bl * scale - 2, result.bw * scale - 2);
-      }
-
-      const remainL = result.container.l - result.cols * result.bl;
-      const remainW = result.container.w - result.rows * result.bw;
-      ctx.strokeStyle = '#ff6b6b';
-      ctx.setLineDash([6,4]);
-      if (remainL > 0) ctx.strokeRect(x0 + result.cols * result.bl * scale, y0, remainL * scale, result.rows * result.bw * scale);
-      if (remainW > 0) ctx.strokeRect(x0, y0 + result.rows * result.bw * scale, result.cols * result.bl * scale, remainW * scale);
-      ctx.setLineDash([]);
-      ctx.fillStyle = '#17324f';
-      ctx.font = '16px sans-serif';
-      ctx.fillText(`单层 ${loadedCells.length} 件（${result.cols}列 × ${result.rows}排）；尾部余长 ${Math.max(0, remainL)} mm；侧边余宽 ${Math.max(0, remainW)} mm`, 24, 24);
-      ctx.fillText(`货物 ${result.bl} × ${result.bw} mm / 柜内 ${result.container.l} × ${result.container.w} mm`, 24, 46);
+    function ptFactory(startX, startY, scale) {
+      const ix = v => v * 0.62 * scale, iy = v => v * 0.22 * scale, iz = v => v * 0.72 * scale;
+      return {
+        ix, iy, iz,
+        pt(x,y,z){ return { x: startX + ix(x) - ix(y), y: startY - iy(x) - iy(y) - iz(z) }; }
+      };
     }
 
-    function drawSide(result) {
-      const c = ids('sideCanvas');
-      const ctx = c.getContext('2d');
-      ctx.clearRect(0, 0, c.width, c.height);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, c.width, c.height);
-      if (!result || !result.fits) {
-        ctx.fillStyle = '#234';
-        ctx.font = '28px sans-serif';
-        ctx.fillText('无可用堆叠图', 250, 160);
-        return;
-      }
-      const pad = 26;
-      const scale = Math.min((c.width - pad * 2) / result.container.l, (c.height - pad * 2) / result.container.h);
-      const x0 = (c.width - result.container.l * scale) / 2;
-      const y0 = (c.height - result.container.h * scale) / 2;
-      ctx.fillStyle = '#f2f5fb';
-      ctx.fillRect(x0, y0, result.container.l * scale, result.container.h * scale);
-      ctx.strokeStyle = '#17324f';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x0, y0, result.container.l * scale, result.container.h * scale);
-
-      const loadedCells = buildLoadedCells(result);
-      const occupied = new Set();
-      for (const cell of loadedCells) occupied.add(`${cell.x}-${cell.z}`);
-      for (let layer = 0; layer < result.layers; layer++) {
-        for (let col = 0; col < result.cols; col++) {
-          if (!occupied.has(`${col}-${layer}`)) continue;
-          const x = x0 + col * result.bl * scale;
-          const y = y0 + (result.container.h - (layer + 1) * result.bh) * scale;
-          ctx.fillStyle = `hsl(${(layer * 40 + col * 10) % 360} 80% 70%)`;
-          ctx.fillRect(x + 1, y + 1, result.bl * scale - 2, result.bh * scale - 2);
-        }
-      }
-      ctx.fillStyle = '#17324f';
-      ctx.font = '16px sans-serif';
-      ctx.fillText(`侧视：${result.cols} 列 × ${result.layers} 层；尾部余长约 ${Math.max(0, result.container.l - result.cols * result.bl)} mm；顶部余高约 ${Math.max(0, result.container.h - result.layers * result.bh)} mm`, 24, 24);
+    function drawPrism(ctx, geo, x,y,z,l,w,h, face) {
+      const p = geo.pt;
+      const p000=p(x,y,z), p100=p(x+l,y,z), p110=p(x+l,y+w,z), p010=p(x,y+w,z), p001=p(x,y,z+h), p101=p(x+l,y,z+h), p111=p(x+l,y+w,z+h), p011=p(x,y+w,z+h);
+      ctx.beginPath(); ctx.moveTo(p001.x,p001.y); ctx.lineTo(p101.x,p101.y); ctx.lineTo(p111.x,p111.y); ctx.lineTo(p011.x,p011.y); ctx.closePath(); ctx.fillStyle=face.top; ctx.fill(); ctx.strokeStyle='rgba(0,0,0,.15)'; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(p001.x,p001.y); ctx.lineTo(p011.x,p011.y); ctx.lineTo(p010.x,p010.y); ctx.lineTo(p000.x,p000.y); ctx.closePath(); ctx.fillStyle=face.left; ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(p001.x,p001.y); ctx.lineTo(p101.x,p101.y); ctx.lineTo(p100.x,p100.y); ctx.lineTo(p000.x,p000.y); ctx.closePath(); ctx.fillStyle=face.right; ctx.fill(); ctx.stroke();
     }
 
-    function drawFront(result) {
-      const c = ids('frontCanvas');
-      const ctx = c.getContext('2d');
-      ctx.clearRect(0, 0, c.width, c.height);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, c.width, c.height);
-      if (!result || !result.fits) {
-        ctx.fillStyle = '#234';
-        ctx.font = '28px sans-serif';
-        ctx.fillText('无可用正视图', 250, 160);
-        return;
+    function drawHero(r) {
+      const c = $('heroCanvas'), ctx = c.getContext('2d');
+      ctx.clearRect(0,0,c.width,c.height);
+      const g = ctx.createLinearGradient(0,0,0,c.height); g.addColorStop(0,'#f9fcff'); g.addColorStop(1,'#e9f1fb'); ctx.fillStyle=g; ctx.fillRect(0,0,c.width,c.height);
+      if (!r?.fits) { ctx.fillStyle='#234'; ctx.font='30px sans-serif'; ctx.fillText('当前货物无法装入该柜型', 250, 260); return; }
+      const shownCols = Math.min(r.cols, 7), shownRows = Math.min(r.rows, 4), shownLayers = Math.min(r.layers, 4);
+      const scale = Math.min(0.06, Math.min((c.width-180)/(r.container.l+r.container.w*.8),(c.height-120)/(r.container.h+r.container.w*.25)));
+      const projW = (r.container.l + r.container.w) * .62 * scale;
+      const projH = (r.container.l + r.container.w) * .22 * scale + r.container.h * .72 * scale;
+      const geo = ptFactory((c.width-projW)/2 + 20, c.height - (c.height-projH)/2 + 30, scale);
+      drawPrism(ctx, geo, 0,0,0, r.container.l, r.container.w, r.container.h, { top:'rgba(193,206,226,.20)', left:'rgba(165,180,205,.12)', right:'rgba(120,145,180,.12)' });
+      const cells = buildCells(r).filter(v => v.x<shownCols && v.y<shownRows && v.z<shownLayers).sort((a,b)=>(a.z-b.z)||(b.y-a.y)||(a.x-b.x));
+      for (const cell of cells) {
+        drawPrism(ctx, geo, cell.x*r.bl, cell.y*r.bw, cell.z*r.bh, r.bl, r.bw, r.bh, { top:'#d7b07f', left:'#be8e58', right:'#9f6e3c' });
+        const p = geo.pt(cell.x*r.bl + r.bl*.16, cell.y*r.bw + r.bw*.12, cell.z*r.bh + r.bh*.72);
+        ctx.fillStyle='rgba(89,55,18,.50)'; ctx.font='10px sans-serif'; ctx.fillText('BOX', p.x, p.y);
       }
-      const pad = 26;
-      const scale = Math.min((c.width - pad * 2) / result.container.w, (c.height - pad * 2) / result.container.h);
-      const x0 = (c.width - result.container.w * scale) / 2;
-      const y0 = (c.height - result.container.h * scale) / 2;
-      ctx.fillStyle = '#f2f5fb';
-      ctx.fillRect(x0, y0, result.container.w * scale, result.container.h * scale);
-      ctx.strokeStyle = '#17324f';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x0, y0, result.container.w * scale, result.container.h * scale);
-      for (let layer = 0; layer < result.layers; layer++) {
-        for (let row = 0; row < result.rows; row++) {
-          const x = x0 + row * result.bw * scale;
-          const y = y0 + (result.container.h - (layer + 1) * result.bh) * scale;
-          ctx.fillStyle = `hsl(${(layer * 55 + row * 30) % 360} 75% 68%)`;
-          ctx.fillRect(x + 1, y + 1, result.bw * scale - 2, result.bh * scale - 2);
-        }
-      }
-      ctx.fillStyle = '#17324f';
-      ctx.font = '16px sans-serif';
-      ctx.fillText(`正视：${result.rows} 排 × ${result.layers} 层；侧边余宽约 ${Math.max(0, result.container.w - result.rows * result.bw)} mm`, 24, 24);
+      ctx.fillStyle='#17324f'; ctx.font='22px sans-serif'; ctx.fillText(`${r.container.name} 真实货物装箱图`, 24, 32);
+      ctx.font='15px sans-serif'; ctx.fillText(`真实比例箱体效果；前部局部放大展示。整柜 ${r.total} 件，利用率 ${r.fillRate.toFixed(1)}%。`, 24, 58);
     }
 
-    function drawReal(result) {
-      const c = ids('realCanvas');
-      const ctx = c.getContext('2d');
-      ctx.clearRect(0, 0, c.width, c.height);
-      const g = ctx.createLinearGradient(0, 0, 0, c.height);
-      g.addColorStop(0, '#f7fbff');
-      g.addColorStop(1, '#e8eef8');
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, c.width, c.height);
-      if (!result || !result.fits) {
-        ctx.fillStyle = '#234';
-        ctx.font = '28px sans-serif';
-        ctx.fillText('该货物无法放入所选集装箱', 120, 210);
-        return;
-      }
-
-      const shownCols = Math.min(result.cols, 7);
-      const shownRows = Math.min(result.rows, 4);
-      const shownLayers = Math.min(result.layers, 4);
-      const scale = Math.min(0.06, Math.min((c.width - 180) / (result.container.l + result.container.w * 0.8), (c.height - 110) / (result.container.h + result.container.w * 0.25)));
-      const ox = 120;
-      const oy = c.height - 55;
-      const ix = v => v * 0.62 * scale;
-      const iy = v => v * 0.22 * scale;
-      const iz = v => v * 0.72 * scale;
-      const projectedWidth = ix(result.container.l) + ix(result.container.w);
-      const projectedHeight = iy(result.container.l) + iy(result.container.w) + iz(result.container.h);
-      const startX = (c.width - projectedWidth) / 2;
-      const startY = c.height - (c.height - projectedHeight) / 2 + 20;
-
-      function pt(x,y,z){
-        return {x:startX + ix(x) - ix(y), y:startY - iy(x) - iy(y) - iz(z)};
-      }
-      function prism(x,y,z,l,w,h,face){
-        const p000=pt(x,y,z), p100=pt(x+l,y,z), p110=pt(x+l,y+w,z), p010=pt(x,y+w,z);
-        const p001=pt(x,y,z+h), p101=pt(x+l,y,z+h), p111=pt(x+l,y+w,z+h), p011=pt(x,y+w,z+h);
-        ctx.beginPath(); ctx.moveTo(p001.x,p001.y); ctx.lineTo(p101.x,p101.y); ctx.lineTo(p111.x,p111.y); ctx.lineTo(p011.x,p011.y); ctx.closePath(); ctx.fillStyle=face.top; ctx.fill(); ctx.strokeStyle='rgba(0,0,0,.15)'; ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(p001.x,p001.y); ctx.lineTo(p011.x,p011.y); ctx.lineTo(p010.x,p010.y); ctx.lineTo(p000.x,p000.y); ctx.closePath(); ctx.fillStyle=face.left; ctx.fill(); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(p001.x,p001.y); ctx.lineTo(p101.x,p101.y); ctx.lineTo(p100.x,p100.y); ctx.lineTo(p000.x,p000.y); ctx.closePath(); ctx.fillStyle=face.right; ctx.fill(); ctx.stroke();
-      }
-
-      prism(0,0,0,result.container.l,result.container.w,result.container.h,{top:'rgba(190,205,225,.22)',left:'rgba(160,180,205,.12)',right:'rgba(120,145,180,.10)'});
-      const loadedCells = buildLoadedCells(result).filter(cell => cell.x < shownCols && cell.y < shownRows && cell.z < shownLayers);
-      loadedCells.sort((a,b)=>(a.z-b.z)||(b.y-a.y)||(a.x-b.x));
-      for(const cell of loadedCells){
-        prism(cell.x*result.bl, cell.y*result.bw, cell.z*result.bh, result.bl, result.bw, result.bh, {
-          top:'#d8b07b', left:'#bc8d58', right:'#a8743f'
-        });
-        const label = pt(cell.x*result.bl + result.bl*0.18, cell.y*result.bw + result.bw*0.12, cell.z*result.bh + result.bh*0.7);
-        ctx.fillStyle='rgba(90,55,22,.55)';
-        ctx.font='10px sans-serif';
-        ctx.fillText('BOX', label.x, label.y);
-      }
-      ctx.fillStyle = '#17324f';
-      ctx.font = '18px sans-serif';
-      ctx.fillText(`${result.container.name} 真实货物装箱效果图`, 24, 30);
-      ctx.font = '15px sans-serif';
-      ctx.fillText(`按真实比例绘制货物箱体与柜体；当前展示前部局部，整柜总计 ${result.total} 件`, 24, 54);
+    function drawTop(r) {
+      const c = $('topCanvas'), ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); ctx.fillStyle='#f7fbff'; ctx.fillRect(0,0,c.width,c.height);
+      if (!r?.fits) return;
+      const pad=18, scale=Math.min((c.width-pad*2)/r.container.l,(c.height-pad*2)/r.container.w), x0=(c.width-r.container.l*scale)/2, y0=(c.height-r.container.w*scale)/2;
+      ctx.fillStyle='#eef3fa'; ctx.fillRect(x0,y0,r.container.l*scale,r.container.w*scale); ctx.strokeStyle='#17324f'; ctx.lineWidth=2; ctx.strokeRect(x0,y0,r.container.l*scale,r.container.w*scale);
+      for (const cell of buildCells(r).filter(v=>v.z===0)) { const x=x0+cell.x*r.bl*scale,y=y0+cell.y*r.bw*scale; ctx.fillStyle='#ca915c'; ctx.fillRect(x+1,y+1,r.bl*scale-2,r.bw*scale-2); }
+      const remainL = r.container.l-r.cols*r.bl, remainW = r.container.w-r.rows*r.bw;
+      ctx.fillStyle='#17324f'; ctx.font='15px sans-serif'; ctx.fillText(`单层 ${r.cols*r.rows} 件；尾部余长 ${Math.max(0,remainL)} mm；侧边余宽 ${Math.max(0,remainW)} mm`, 18, 22);
     }
 
-    function renderSelected() {
-      const selected = currentResults.find(r => r.container.key === selectedContainerKey) || currentResults[0];
-      drawReal(selected);
-      drawTop(selected);
-      drawSide(selected);
-      drawFront(selected);
-      ids('selectedNotice').innerHTML = selected ? `当前展示的是：<b>${selected.container.name}</b> 的标准装箱图。上方点哪个柜，下面就展示哪个柜。空白区域表示该柜未被货物占满，这是实际余量，不是画错。` : '';
-      ids('realLegend').textContent = selected && selected.fits ? `${selected.container.name}：真实箱体效果图，按实际长宽高比例绘制；整柜总计 ${selected.total} 件。` : '暂无可视化结果';
-      ids('topLegend').textContent = selected && selected.fits ? `${selected.container.name}：这里显示的是单层放大图，底层 ${selected.cols * selected.rows} 件；整柜总计 ${selected.total} 件。` : '暂无可视化结果';
-      ids('sideLegend').textContent = selected && selected.fits ? `摆放尺寸：${selected.bl} × ${selected.bw} × ${selected.bh} mm；总计 ${selected.total} 件。` : '暂无可视化结果';
-      ids('frontLegend').textContent = selected && selected.fits ? `正视图显示宽度方向 ${selected.rows} 排、垂直方向 ${selected.layers} 层。` : '暂无可视化结果';
-      ids('summary').innerHTML = selected && selected.fits
-        ? `当前展示柜型：<b>${selected.container.name}</b>。在当前规则下预计可装 <b>${selected.total} 件</b>，图示与该柜型结果保持一致。`
-        : `当前尺寸下标准柜装不下。请检查输入尺寸。`;
+    function drawSide(r) {
+      const c = $('sideCanvas'), ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); ctx.fillStyle='#f7fbff'; ctx.fillRect(0,0,c.width,c.height);
+      if (!r?.fits) return;
+      const pad=18, scale=Math.min((c.width-pad*2)/r.container.l,(c.height-pad*2)/r.container.h), x0=(c.width-r.container.l*scale)/2, y0=(c.height-r.container.h*scale)/2;
+      ctx.fillStyle='#eef3fa'; ctx.fillRect(x0,y0,r.container.l*scale,r.container.h*scale); ctx.strokeStyle='#17324f'; ctx.lineWidth=2; ctx.strokeRect(x0,y0,r.container.l*scale,r.container.h*scale);
+      const occ = new Set(buildCells(r).map(v => `${v.x}-${v.z}`));
+      for (let z=0; z<r.layers; z++) for (let x=0; x<r.cols; x++) if (occ.has(`${x}-${z}`)) { const px=x0+x*r.bl*scale, py=y0+(r.container.h-(z+1)*r.bh)*scale; ctx.fillStyle='#ca915c'; ctx.fillRect(px+1,py+1,r.bl*scale-2,r.bh*scale-2); }
+      ctx.fillStyle='#17324f'; ctx.font='15px sans-serif'; ctx.fillText(`侧视 ${r.cols} 列 × ${r.layers} 层；顶部余高 ${Math.max(0,r.container.h-r.layers*r.bh)} mm`, 18, 22);
+    }
+
+    function drawFront(r) {
+      const c = $('frontCanvas'), ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); ctx.fillStyle='#f7fbff'; ctx.fillRect(0,0,c.width,c.height);
+      if (!r?.fits) return;
+      const pad=18, scale=Math.min((c.width-pad*2)/r.container.w,(c.height-pad*2)/r.container.h), x0=(c.width-r.container.w*scale)/2, y0=(c.height-r.container.h*scale)/2;
+      ctx.fillStyle='#eef3fa'; ctx.fillRect(x0,y0,r.container.w*scale,r.container.h*scale); ctx.strokeStyle='#17324f'; ctx.lineWidth=2; ctx.strokeRect(x0,y0,r.container.w*scale,r.container.h*scale);
+      for (let z=0; z<r.layers; z++) for (let y=0; y<r.rows; y++) { const px=x0+y*r.bw*scale, py=y0+(r.container.h-(z+1)*r.bh)*scale; ctx.fillStyle='#ca915c'; ctx.fillRect(px+1,py+1,r.bw*scale-2,r.bh*scale-2); }
+      ctx.fillStyle='#17324f'; ctx.font='15px sans-serif'; ctx.fillText(`正视 ${r.rows} 排 × ${r.layers} 层；侧边余宽 ${Math.max(0,r.container.w-r.rows*r.bw)} mm`, 18, 22);
+    }
+
+    function renderAll() {
+      renderCards();
+      const r = results.find(v => v.container.key === selectedKey) || results[0];
+      $('mContainer').textContent = r?.container.name || '-';
+      $('mCount').textContent = r?.total || 0;
+      $('mFill').textContent = r?.fillRate ? `${r.fillRate.toFixed(1)}%` : '0%';
+      $('mDims').textContent = r?.bl ? `${r.bl}×${r.bw}×${r.bh} mm` : '-';
+      $('heroNote').textContent = r?.fits ? `整柜 ${r.total} 件 · ${r.cols}×${r.rows}×${r.layers}` : 'Not fit';
+      drawHero(r); drawTop(r); drawSide(r); drawFront(r);
+      $('heroLegend').textContent = r?.fits ? `当前展示 ${r.container.name}。真实比例货物效果图用于给客户看形象效果；大批量时展示前部局部，不会把几百件全部挤成小点。` : '当前货物尺寸无法装入该柜型。';
+      $('topLegend').textContent = r?.fits ? `这是单层放大图：客户能一眼看懂每层怎么摆。` : '';
+      $('sideLegend').textContent = r?.fits ? `这是纵深方向的层高关系。` : '';
+      $('frontLegend').textContent = r?.fits ? `这是宽度方向的排布关系。` : '';
+      $('summary').innerHTML = r?.fits
+        ? `当前柜型 <b>${r.container.name}</b>，规则极限装箱可装 <b>${r.total} 件</b>，体积利用率约 <b>${r.fillRate.toFixed(1)}%</b>。如果你还要，我下一步可以继续加 <b>更拟真的集装箱照片级渲染风格</b> 和 <b>极限混合摆放算法</b>。`
+        : '当前输入尺寸无法装入标准柜型。';
     }
 
     function calculate() {
-      const box = {
-        l: parseFloat(ids('l').value || 0),
-        w: parseFloat(ids('w').value || 0),
-        h: parseFloat(ids('h').value || 0),
-        weight: parseFloat(ids('weight').value || 0)
-      };
-      const mode = ids('mode').value;
-      let reserve = parseFloat(ids('reserve').value);
-      if (Number.isNaN(reserve)) reserve = 0;
-      reserve = Math.max(0, Math.min(30, reserve));
-      ids('reserve').value = reserve;
-      if (!box.l || !box.w || !box.h) {
-        ids('summary').innerHTML = '请先完整输入货物长、宽、高。';
-        return;
-      }
-      const results = containers.map(c => calcFor(c, box, mode, reserve));
-      const best = results.slice().sort((a,b) => b.total - a.total)[0];
-      if (best) selectedContainerKey = best.container.key;
-      renderResults(results);
-      renderSelected();
+      const box = { l:+$('l').value||0, w:+$('w').value||0, h:+$('h').value||0, weight:+$('weight').value||0 };
+      let reserve = +$('reserve').value; if (Number.isNaN(reserve)) reserve=0; reserve=Math.max(0,Math.min(30,reserve)); $('reserve').value=reserve;
+      const mode = $('mode').value;
+      results = containers.map(c => calcOne(c, box, mode, reserve));
+      const best = [...results].sort((a,b)=>(b.total||0)-(a.total||0))[0];
+      if (best) selectedKey = best.container.key;
+      renderAll();
     }
 
-    ids('calc').addEventListener('click', calculate);
-    ids('demo').addEventListener('click', () => {
-      ids('l').value = 580;
-      ids('w').value = 390;
-      ids('h').value = 320;
-      ids('weight').value = 11.5;
-      ids('reserve').value = 5;
-      ids('mode').value = 'best';
-      calculate();
-    });
-
+    $('calc').onclick = calculate;
+    $('demo').onclick = () => { $('l').value=580; $('w').value=390; $('h').value=320; $('weight').value=11.5; $('reserve').value=5; $('mode').value='best'; calculate(); };
     calculate();
   </script>
 </body>
