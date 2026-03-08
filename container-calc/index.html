@@ -121,16 +121,21 @@
       <div class="card">
         <div class="results" id="results"></div>
         <div class="legend" id="selectedNotice" style="margin: -2px 0 14px; color:#9fb2d9;"></div>
-        <div class="canvases">
+        <div class="canvases" style="grid-template-columns: 1fr;">
           <div>
-            <h2 class="section-title">3D 装箱演示图</h2>
-            <canvas id="isoCanvas" width="720" height="420"></canvas>
-            <div class="legend" id="isoLegend"></div>
+            <h2 class="section-title">标准装箱图（俯视图）</h2>
+            <canvas id="topCanvas" width="720" height="320"></canvas>
+            <div class="legend" id="topLegend"></div>
           </div>
           <div>
-            <h2 class="section-title">侧面堆叠图（层数）</h2>
-            <canvas id="sideCanvas" width="720" height="420"></canvas>
+            <h2 class="section-title">标准装箱图（侧视图）</h2>
+            <canvas id="sideCanvas" width="720" height="320"></canvas>
             <div class="legend" id="sideLegend"></div>
+          </div>
+          <div>
+            <h2 class="section-title">标准装箱图（正视图）</h2>
+            <canvas id="frontCanvas" width="720" height="320"></canvas>
+            <div class="legend" id="frontLegend"></div>
           </div>
         </div>
         <div class="footer-note" id="summary"></div>
@@ -226,8 +231,8 @@
       return cells;
     }
 
-    function drawIso(result) {
-      const c = ids('isoCanvas');
+    function drawTop(result) {
+      const c = ids('topCanvas');
       const ctx = c.getContext('2d');
       ctx.clearRect(0, 0, c.width, c.height);
       ctx.fillStyle = '#ffffff';
@@ -235,92 +240,33 @@
       if (!result || !result.fits) {
         ctx.fillStyle = '#234';
         ctx.font = '28px sans-serif';
-        ctx.fillText('该货物无法放入所选集装箱', 120, 210);
+        ctx.fillText('该货物无法放入所选集装箱', 120, 160);
         return;
       }
+      const pad = 26;
+      const scale = Math.min((c.width - pad * 2) / result.container.l, (c.height - pad * 2) / result.container.w);
+      const x0 = (c.width - result.container.l * scale) / 2;
+      const y0 = (c.height - result.container.w * scale) / 2;
+      ctx.fillStyle = '#f2f5fb';
+      ctx.fillRect(x0, y0, result.container.l * scale, result.container.w * scale);
+      ctx.strokeStyle = '#17324f';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x0, y0, result.container.l * scale, result.container.w * scale);
 
-      const loadedCells = buildLoadedCells(result);
-      const maxCols = Math.min(result.cols, 6);
-      const maxRows = Math.min(result.rows, 4);
-      const maxLayers = Math.min(result.layers, 4);
-      const visibleCells = loadedCells.filter(cell => cell.x < maxCols && cell.y < maxRows && cell.z < maxLayers);
-      const totalIsoW = (result.container.l + result.container.w) * 0.55;
-      const totalIsoH = (result.container.l + result.container.w) * 0.18 + result.container.h * 0.75;
-      const scale = Math.min((c.width - 120) / totalIsoW, (c.height - 90) / totalIsoH);
-      const ox = 100;
-      const oy = c.height - 45;
-
-      function iso(x, y, z) {
-        return {
-          x: ox + (x - y) * 0.55 * scale,
-          y: oy - (x + y) * 0.18 * scale - z * 0.75 * scale
-        };
+      const loadedCells = buildLoadedCells(result).filter(cell => cell.z === 0);
+      for (const cell of loadedCells) {
+        const x = x0 + cell.x * result.bl * scale;
+        const y = y0 + cell.y * result.bw * scale;
+        ctx.fillStyle = `hsl(${(cell.x * 19 + cell.y * 37) % 360} 75% 68%)`;
+        ctx.fillRect(x + 1, y + 1, result.bl * scale - 2, result.bw * scale - 2);
       }
 
-      function drawBox(x, y, z, l, w, h, color) {
-        const p000 = iso(x, y, z);
-        const p100 = iso(x + l, y, z);
-        const p110 = iso(x + l, y + w, z);
-        const p010 = iso(x, y + w, z);
-        const p001 = iso(x, y, z + h);
-        const p101 = iso(x + l, y, z + h);
-        const p111 = iso(x + l, y + w, z + h);
-        const p011 = iso(x, y + w, z + h);
-
-        ctx.beginPath();
-        ctx.moveTo(p001.x, p001.y);
-        ctx.lineTo(p101.x, p101.y);
-        ctx.lineTo(p111.x, p111.y);
-        ctx.lineTo(p011.x, p011.y);
-        ctx.closePath();
-        ctx.fillStyle = color;
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(0,0,0,.14)';
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(p001.x, p001.y);
-        ctx.lineTo(p011.x, p011.y);
-        ctx.lineTo(p010.x, p010.y);
-        ctx.lineTo(p000.x, p000.y);
-        ctx.closePath();
-        ctx.fillStyle = 'rgba(50,100,180,.20)';
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(p001.x, p001.y);
-        ctx.lineTo(p101.x, p101.y);
-        ctx.lineTo(p100.x, p100.y);
-        ctx.lineTo(p000.x, p000.y);
-        ctx.closePath();
-        ctx.fillStyle = 'rgba(20,50,120,.10)';
-        ctx.fill();
-        ctx.stroke();
-      }
-
-      drawBox(0, 0, 0, result.container.l, result.container.w, result.container.h, 'rgba(100,160,255,.08)');
-
-      visibleCells.sort((a, b) => (a.z - b.z) || (b.y - a.y) || (a.x - b.x));
-      for (const cell of visibleCells) {
-        const hue = (cell.x * 27 + cell.y * 39 + cell.z * 51) % 360;
-        drawBox(
-          cell.x * result.bl,
-          cell.y * result.bw,
-          cell.z * result.bh,
-          result.bl,
-          result.bw,
-          result.bh,
-          `hsla(${hue}, 85%, 68%, 0.95)`
-        );
-      }
-
+      const usedL = Math.min(result.total, result.cols * result.rows) > 0 ? Math.min(result.cols, Math.ceil(Math.min(result.total, result.cols * result.rows) / Math.max(result.rows,1))) * result.bl : 0;
+      const remainL = result.container.l - usedL;
+      const remainW = result.container.w - result.rows * result.bw;
       ctx.fillStyle = '#17324f';
-      ctx.font = '20px sans-serif';
-      ctx.fillText(`真实比例3D：图中展示 ${visibleCells.length} 件 / 实际总数 ${result.total} 件`, 28, 34);
       ctx.font = '16px sans-serif';
-      ctx.fillText(`实际排布：${result.cols}列 × ${result.rows}排 × ${result.layers}层`, 28, 60);
-      ctx.fillText(`按真实长宽高比例绘制，图中数量与计算结果一致`, 28, 84);
+      ctx.fillText(`底层：${loadedCells.length} 件；尾部余长约 ${Math.max(0, remainL)} mm；侧边余宽约 ${Math.max(0, remainW)} mm`, 24, 24);
     }
 
     function drawSide(result) {
@@ -332,25 +278,24 @@
       if (!result || !result.fits) {
         ctx.fillStyle = '#234';
         ctx.font = '28px sans-serif';
-        ctx.fillText('无可用堆叠图', 250, 210);
+        ctx.fillText('无可用堆叠图', 250, 160);
         return;
       }
-      const pad = 30;
+      const pad = 26;
       const scale = Math.min((c.width - pad * 2) / result.container.l, (c.height - pad * 2) / result.container.h);
       const x0 = (c.width - result.container.l * scale) / 2;
       const y0 = (c.height - result.container.h * scale) / 2;
+      ctx.fillStyle = '#f2f5fb';
+      ctx.fillRect(x0, y0, result.container.l * scale, result.container.h * scale);
       ctx.strokeStyle = '#17324f';
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 2;
       ctx.strokeRect(x0, y0, result.container.l * scale, result.container.h * scale);
 
       const loadedCells = buildLoadedCells(result);
-      const visibleCols = Math.min(result.cols, 18);
       const occupied = new Set();
-      for (const cell of loadedCells) {
-        if (cell.x < visibleCols) occupied.add(`${cell.x}-${cell.z}`);
-      }
+      for (const cell of loadedCells) occupied.add(`${cell.x}-${cell.z}`);
       for (let layer = 0; layer < result.layers; layer++) {
-        for (let col = 0; col < visibleCols; col++) {
+        for (let col = 0; col < result.cols; col++) {
           if (!occupied.has(`${col}-${layer}`)) continue;
           const x = x0 + col * result.bl * scale;
           const y = y0 + (result.container.h - (layer + 1) * result.bh) * scale;
@@ -358,18 +303,54 @@
           ctx.fillRect(x + 1, y + 1, result.bl * scale - 2, result.bh * scale - 2);
         }
       }
-      ctx.fillStyle = '#234';
-      ctx.font = '20px sans-serif';
-      ctx.fillText(`侧视图按实际装载数量绘制，总计 ${result.total} 件`, 32, 32);
+      ctx.fillStyle = '#17324f';
+      ctx.font = '16px sans-serif';
+      ctx.fillText(`侧视：${result.cols} 列 × ${result.layers} 层；尾部余长约 ${Math.max(0, result.container.l - result.cols * result.bl)} mm；顶部余高约 ${Math.max(0, result.container.h - result.layers * result.bh)} mm`, 24, 24);
+    }
+
+    function drawFront(result) {
+      const c = ids('frontCanvas');
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, c.width, c.height);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, c.width, c.height);
+      if (!result || !result.fits) {
+        ctx.fillStyle = '#234';
+        ctx.font = '28px sans-serif';
+        ctx.fillText('无可用正视图', 250, 160);
+        return;
+      }
+      const pad = 26;
+      const scale = Math.min((c.width - pad * 2) / result.container.w, (c.height - pad * 2) / result.container.h);
+      const x0 = (c.width - result.container.w * scale) / 2;
+      const y0 = (c.height - result.container.h * scale) / 2;
+      ctx.fillStyle = '#f2f5fb';
+      ctx.fillRect(x0, y0, result.container.w * scale, result.container.h * scale);
+      ctx.strokeStyle = '#17324f';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x0, y0, result.container.w * scale, result.container.h * scale);
+      for (let layer = 0; layer < result.layers; layer++) {
+        for (let row = 0; row < result.rows; row++) {
+          const x = x0 + row * result.bw * scale;
+          const y = y0 + (result.container.h - (layer + 1) * result.bh) * scale;
+          ctx.fillStyle = `hsl(${(layer * 55 + row * 30) % 360} 75% 68%)`;
+          ctx.fillRect(x + 1, y + 1, result.bw * scale - 2, result.bh * scale - 2);
+        }
+      }
+      ctx.fillStyle = '#17324f';
+      ctx.font = '16px sans-serif';
+      ctx.fillText(`正视：${result.rows} 排 × ${result.layers} 层；侧边余宽约 ${Math.max(0, result.container.w - result.rows * result.bw)} mm`, 24, 24);
     }
 
     function renderSelected() {
       const selected = currentResults.find(r => r.container.key === selectedContainerKey) || currentResults[0];
-      drawIso(selected);
+      drawTop(selected);
       drawSide(selected);
-      ids('selectedNotice').innerHTML = selected ? `当前展示的是：<b>${selected.container.name}</b> 的真实比例装箱图。上方点哪个柜，下面就展示哪个柜。` : '';
-      ids('isoLegend').textContent = selected && selected.fits ? `${selected.container.name}：单层 ${selected.cols * selected.rows} 件，共 ${selected.layers} 层；总计 ${selected.total} 件。` : '暂无可视化结果';
+      drawFront(selected);
+      ids('selectedNotice').innerHTML = selected ? `当前展示的是：<b>${selected.container.name}</b> 的标准装箱图。上方点哪个柜，下面就展示哪个柜。空白区域表示该柜未被货物占满，这是实际余量，不是画错。` : '';
+      ids('topLegend').textContent = selected && selected.fits ? `${selected.container.name}：底层 ${selected.cols * selected.rows} 件；总计 ${selected.total} 件。` : '暂无可视化结果';
       ids('sideLegend').textContent = selected && selected.fits ? `摆放尺寸：${selected.bl} × ${selected.bw} × ${selected.bh} mm；总计 ${selected.total} 件。` : '暂无可视化结果';
+      ids('frontLegend').textContent = selected && selected.fits ? `正视图显示宽度方向 ${selected.rows} 排、垂直方向 ${selected.layers} 层。` : '暂无可视化结果';
       ids('summary').innerHTML = selected && selected.fits
         ? `当前展示柜型：<b>${selected.container.name}</b>。在当前规则下预计可装 <b>${selected.total} 件</b>，图示与该柜型结果保持一致。`
         : `当前尺寸下标准柜装不下。请检查输入尺寸。`;
