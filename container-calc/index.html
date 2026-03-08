@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>集装箱装箱计算器</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --card: rgba(18, 27, 52, .9);
+      --line: rgba(255,255,255,.08);
+      --text: #eef4ff;
+      --muted: #9fb2d9;
+      --accent: #4da3ff;
+      --green: #2ecc71;
+      --orange: #ffb54d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+      background: linear-gradient(180deg, #0b1020, #111931 55%, #0e1428);
+      color: var(--text);
+    }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px; }
+    h1 { margin: 0 0 8px; font-size: 32px; }
+    .sub { color: var(--muted); margin-bottom: 22px; }
+    .grid { display: grid; grid-template-columns: 390px 1fr; gap: 20px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 18px 48px rgba(0,0,0,.28);
+      backdrop-filter: blur(8px);
+    }
+    .section-title { font-size: 17px; margin: 0 0 14px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+    input, select, button {
+      width: 100%; border-radius: 12px; border: 1px solid var(--line);
+      background: rgba(255,255,255,.04); color: var(--text); padding: 12px 14px; font-size: 15px;
+    }
+    button {
+      background: linear-gradient(90deg, #2684ff, #4db8ff);
+      border: none; font-weight: 700; cursor: pointer;
+      color: white;
+    }
+    button.secondary { background: rgba(255,255,255,.08); }
+    .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+    .tips { font-size: 12px; color: var(--muted); line-height: 1.6; margin-top: 12px; }
+    .results { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+    .result-box { border: 1px solid var(--line); border-radius: 16px; padding: 14px; background: rgba(255,255,255,.03); }
+    .result-box h3 { margin: 0 0 8px; font-size: 16px; }
+    .big { font-size: 30px; font-weight: 800; color: #fff; }
+    .ok { color: var(--green); }
+    .warn { color: var(--orange); }
+    .meta { color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .canvases { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    canvas { width: 100%; background: #f8fbff; border-radius: 16px; border: 1px solid rgba(0,0,0,.06); }
+    .legend { font-size: 13px; color: var(--muted); margin-top: 8px; }
+    .footer-note { margin-top: 16px; font-size: 12px; color: var(--muted); line-height: 1.7; }
+    @media (max-width: 980px) {
+      .grid, .canvases, .results { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>集装箱装箱计算器</h1>
+    <div class="sub">输入单件货物尺寸 / 重量，自动计算 20GP、40GP、40HQ（高柜）能装多少件，并生成简易装箱图。</div>
+
+    <div class="grid">
+      <div class="card">
+        <h2 class="section-title">货物参数</h2>
+        <div class="row">
+          <div>
+            <label>长度 (cm)</label>
+            <input id="l" type="number" value="60" min="1" step="0.1" />
+          </div>
+          <div>
+            <label>宽度 (cm)</label>
+            <input id="w" type="number" value="40" min="1" step="0.1" />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>高度 (cm)</label>
+            <input id="h" type="number" value="35" min="1" step="0.1" />
+          </div>
+          <div>
+            <label>单件重量 (kg，可选)</label>
+            <input id="weight" type="number" value="12" min="0" step="0.1" />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>装箱方式</label>
+            <select id="mode">
+              <option value="best">自动选择最优摆放</option>
+              <option value="upright">保持正放（高=输入高度）</option>
+            </select>
+          </div>
+          <div>
+            <label>预留空间 (%)</label>
+            <input id="reserve" type="number" value="5" min="0" max="30" step="1" />
+          </div>
+        </div>
+        <div class="btns">
+          <button id="calc">立即计算</button>
+          <button class="secondary" id="demo">示例数据</button>
+        </div>
+        <div class="tips">
+          说明：<br>
+          1. 计算默认按规则排布与尺寸约束，适合快速估算。<br>
+          2. 装箱图为示意图，便于跟客户/仓库沟通。<br>
+          3. 若填写重量，会同时校验集装箱载重上限。<br>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="results" id="results"></div>
+        <div class="canvases">
+          <div>
+            <h2 class="section-title">平面装箱图（底层摆放）</h2>
+            <canvas id="floorCanvas" width="720" height="420"></canvas>
+            <div class="legend" id="floorLegend"></div>
+          </div>
+          <div>
+            <h2 class="section-title">侧面堆叠图（层数）</h2>
+            <canvas id="sideCanvas" width="720" height="420"></canvas>
+            <div class="legend" id="sideLegend"></div>
+          </div>
+        </div>
+        <div class="footer-note" id="summary"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const containers = [
+      { key: '20GP', name: '20GP', l: 589, w: 235, h: 239, maxKg: 28200 },
+      { key: '40GP', name: '40GP', l: 1203, w: 235, h: 239, maxKg: 26500 },
+      { key: '40HQ', name: '40HQ', l: 1203, w: 235, h: 269, maxKg: 26500 },
+      { key: '小柜', name: '小柜(20GP)', l: 589, w: 235, h: 239, maxKg: 28200 }
+    ];
+
+    const ids = id => document.getElementById(id);
+
+    function permutations(dims) {
+      const [a, b, c] = dims;
+      return [
+        [a,b,c],[a,c,b],[b,a,c],[b,c,a],[c,a,b],[c,b,a]
+      ].filter((v, i, arr) => arr.findIndex(x => x.join(',') === v.join(',')) === i);
+    }
+
+    function calcFor(container, box, mode, reservePct) {
+      const factor = Math.max(0.7, 1 - reservePct / 100);
+      const dims = mode === 'upright' ? [[box.l, box.w, box.h], [box.w, box.l, box.h]] : permutations([box.l, box.w, box.h]);
+      let best = null;
+
+      for (const [bl, bw, bh] of dims) {
+        if (bl > container.l || bw > container.w || bh > container.h) continue;
+        const cols = Math.floor(container.l / bl);
+        const rows = Math.floor(container.w / bw);
+        const layers = Math.floor(container.h / bh);
+        const total = Math.floor(cols * rows * layers * factor);
+        const plan = { bl, bw, bh, cols, rows, layers, total };
+        if (!best || plan.total > best.total) best = plan;
+      }
+
+      if (!best) return { container, total: 0, fits: false };
+
+      let weightLimited = false;
+      if (box.weight > 0) {
+        const maxByWeight = Math.floor(container.maxKg / box.weight);
+        if (maxByWeight < best.total) {
+          best.total = maxByWeight;
+          weightLimited = true;
+        }
+      }
+      return { container, ...best, fits: best.total > 0, weightLimited };
+    }
+
+    function renderResults(results) {
+      ids('results').innerHTML = results.map(r => {
+        const status = r.fits ? (r.weightLimited ? '受重量限制' : '可装') : '放不下';
+        const cls = r.fits ? (r.weightLimited ? 'warn' : 'ok') : 'warn';
+        return `
+          <div class="result-box">
+            <h3>${r.container.name}</h3>
+            <div class="big">${r.total || 0} 件</div>
+            <div class="meta ${cls}">${status}</div>
+            <div class="meta">尺寸：${r.container.l}×${r.container.w}×${r.container.h} cm</div>
+            <div class="meta">摆放：${r.bl ? `${r.bl}×${r.bw}×${r.bh} cm` : '-'}</div>
+            <div class="meta">排布：${r.cols || 0} × ${r.rows || 0} × ${r.layers || 0}</div>
+          </div>`;
+      }).join('');
+    }
+
+    function drawFloor(result) {
+      const c = ids('floorCanvas');
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, c.width, c.height);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, c.width, c.height);
+      if (!result || !result.fits) {
+        ctx.fillStyle = '#234';
+        ctx.font = '28px sans-serif';
+        ctx.fillText('该货物无法放入所选集装箱', 120, 210);
+        return;
+      }
+      const pad = 30;
+      const scale = Math.min((c.width - pad * 2) / result.container.l, (c.height - pad * 2) / result.container.w);
+      const x0 = (c.width - result.container.l * scale) / 2;
+      const y0 = (c.height - result.container.w * scale) / 2;
+      ctx.strokeStyle = '#17324f';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x0, y0, result.container.l * scale, result.container.w * scale);
+      const maxCells = Math.min(result.cols * result.rows, 140);
+      let drawn = 0;
+      for (let r = 0; r < result.rows; r++) {
+        for (let col = 0; col < result.cols; col++) {
+          if (drawn >= maxCells) break;
+          const x = x0 + col * result.bl * scale;
+          const y = y0 + r * result.bw * scale;
+          ctx.fillStyle = `hsl(${(drawn * 17) % 360} 75% 68%)`;
+          ctx.fillRect(x + 1, y + 1, result.bl * scale - 2, result.bw * scale - 2);
+          drawn++;
+        }
+      }
+      if (result.cols * result.rows > maxCells) {
+        ctx.fillStyle = '#234';
+        ctx.font = '20px sans-serif';
+        ctx.fillText(`仅示意前 ${maxCells} 箱 / 每层共 ${result.cols * result.rows} 箱`, 32, 32);
+      }
+    }
+
+    function drawSide(result) {
+      const c = ids('sideCanvas');
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, c.width, c.height);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, c.width, c.height);
+      if (!result || !result.fits) {
+        ctx.fillStyle = '#234';
+        ctx.font = '28px sans-serif';
+        ctx.fillText('无可用堆叠图', 250, 210);
+        return;
+      }
+      const pad = 30;
+      const scale = Math.min((c.width - pad * 2) / result.container.l, (c.height - pad * 2) / result.container.h);
+      const x0 = (c.width - result.container.l * scale) / 2;
+      const y0 = (c.height - result.container.h * scale) / 2;
+      ctx.strokeStyle = '#17324f';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x0, y0, result.container.l * scale, result.container.h * scale);
+      const shownCols = Math.min(result.cols, 18);
+      for (let layer = 0; layer < result.layers; layer++) {
+        for (let col = 0; col < shownCols; col++) {
+          const x = x0 + col * result.bl * scale;
+          const y = y0 + (result.container.h - (layer + 1) * result.bh) * scale;
+          ctx.fillStyle = `hsl(${(layer * 40 + col * 10) % 360} 80% 70%)`;
+          ctx.fillRect(x + 1, y + 1, result.bl * scale - 2, result.bh * scale - 2);
+        }
+      }
+      ctx.fillStyle = '#234';
+      ctx.font = '20px sans-serif';
+      ctx.fillText(`示意 ${shownCols} 列 × ${result.layers} 层`, 32, 32);
+    }
+
+    function calculate() {
+      const box = {
+        l: parseFloat(ids('l').value || 0),
+        w: parseFloat(ids('w').value || 0),
+        h: parseFloat(ids('h').value || 0),
+        weight: parseFloat(ids('weight').value || 0)
+      };
+      const mode = ids('mode').value;
+      const reserve = parseFloat(ids('reserve').value || 0);
+      if (!box.l || !box.w || !box.h) return;
+      const results = containers.map(c => calcFor(c, box, mode, reserve));
+      renderResults(results);
+      const best = results.slice().sort((a,b) => b.total - a.total)[0];
+      drawFloor(best);
+      drawSide(best);
+      ids('floorLegend').textContent = best && best.fits ? `最优柜型：${best.container.name}；单层 ${best.cols * best.rows} 件，共 ${best.layers} 层。` : '暂无可视化结果';
+      ids('sideLegend').textContent = best && best.fits ? `摆放尺寸：${best.bl} × ${best.bw} × ${best.bh} cm；总计 ${best.total} 件。` : '暂无可视化结果';
+      ids('summary').innerHTML = best && best.fits
+        ? `推荐优先参考 <b>${best.container.name}</b>：在当前规则下预计可装 <b>${best.total} 件</b>。如果你要，我后续还可以继续给这个网站加：<b>毛重校验、托盘模式、CBM统计、报价联动、导出 PDF 装箱单</b>。`
+        : '当前货物尺寸无法放入标准 20GP / 40GP / 40HQ，请检查尺寸或改为散货/特殊柜。';
+    }
+
+    ids('calc').addEventListener('click', calculate);
+    ids('demo').addEventListener('click', () => {
+      ids('l').value = 58;
+      ids('w').value = 39;
+      ids('h').value = 32;
+      ids('weight').value = 11.5;
+      ids('reserve').value = 5;
+      ids('mode').value = 'best';
+      calculate();
+    });
+
+    calculate();
+  </script>
+</body>
+</html>
