@@ -211,67 +211,89 @@
         return;
       }
 
-      const maxCols = Math.min(result.cols, 8);
-      const maxRows = Math.min(result.rows, 4);
-      const maxLayers = Math.min(result.layers, 4);
-      const cell = Math.min(58, 460 / Math.max(maxCols + maxRows, 1));
-      const ox = 180;
-      const oy = 300;
+      const shownCols = Math.min(result.cols, 6);
+      const shownRows = Math.min(result.rows, 4);
+      const shownLayers = Math.min(result.layers, 4);
+      const totalIsoW = (result.container.l + result.container.w) * 0.55;
+      const totalIsoH = (result.container.l + result.container.w) * 0.18 + result.container.h * 0.75;
+      const scale = Math.min((c.width - 120) / totalIsoW, (c.height - 90) / totalIsoH);
+      const ox = 100;
+      const oy = c.height - 45;
 
-      function cube(x, y, z, color) {
-        const sx = ox + (x - y) * cell * 0.9;
-        const sy = oy - (x + y) * cell * 0.28 - z * cell * 0.8;
+      function iso(x, y, z) {
+        return {
+          x: ox + (x - y) * 0.55 * scale,
+          y: oy - (x + y) * 0.18 * scale - z * 0.75 * scale
+        };
+      }
+
+      function drawBox(x, y, z, l, w, h, color) {
+        const p000 = iso(x, y, z);
+        const p100 = iso(x + l, y, z);
+        const p110 = iso(x + l, y + w, z);
+        const p010 = iso(x, y + w, z);
+        const p001 = iso(x, y, z + h);
+        const p101 = iso(x + l, y, z + h);
+        const p111 = iso(x + l, y + w, z + h);
+        const p011 = iso(x, y + w, z + h);
+
         ctx.beginPath();
-        ctx.moveTo(sx, sy);
-        ctx.lineTo(sx + cell * 0.9, sy - cell * 0.28);
-        ctx.lineTo(sx + 1.8 * cell * 0.9, sy);
-        ctx.lineTo(sx + cell * 0.9, sy + cell * 0.28);
+        ctx.moveTo(p001.x, p001.y);
+        ctx.lineTo(p101.x, p101.y);
+        ctx.lineTo(p111.x, p111.y);
+        ctx.lineTo(p011.x, p011.y);
         ctx.closePath();
         ctx.fillStyle = color;
         ctx.fill();
-        ctx.strokeStyle = 'rgba(0,0,0,.12)';
+        ctx.strokeStyle = 'rgba(0,0,0,.14)';
         ctx.stroke();
 
         ctx.beginPath();
-        ctx.moveTo(sx, sy);
-        ctx.lineTo(sx + cell * 0.9, sy + cell * 0.28);
-        ctx.lineTo(sx + cell * 0.9, sy + cell * 1.05);
-        ctx.lineTo(sx, sy + cell * 0.78);
+        ctx.moveTo(p001.x, p001.y);
+        ctx.lineTo(p011.x, p011.y);
+        ctx.lineTo(p010.x, p010.y);
+        ctx.lineTo(p000.x, p000.y);
         ctx.closePath();
-        ctx.fillStyle = 'rgba(40,80,140,.18)';
+        ctx.fillStyle = 'rgba(50,100,180,.20)';
         ctx.fill();
         ctx.stroke();
 
         ctx.beginPath();
-        ctx.moveTo(sx + cell * 0.9, sy + cell * 0.28);
-        ctx.lineTo(sx + 1.8 * cell * 0.9, sy);
-        ctx.lineTo(sx + 1.8 * cell * 0.9, sy + cell * 0.78);
-        ctx.lineTo(sx + cell * 0.9, sy + cell * 1.05);
+        ctx.moveTo(p001.x, p001.y);
+        ctx.lineTo(p101.x, p101.y);
+        ctx.lineTo(p100.x, p100.y);
+        ctx.lineTo(p000.x, p000.y);
         ctx.closePath();
-        ctx.fillStyle = 'rgba(10,30,80,.12)';
+        ctx.fillStyle = 'rgba(20,50,120,.10)';
         ctx.fill();
         ctx.stroke();
       }
 
-      ctx.strokeStyle = '#17324f';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(22, 20, c.width - 44, c.height - 40);
+      drawBox(0, 0, 0, result.container.l, result.container.w, result.container.h, 'rgba(100,160,255,.08)');
 
-      for (let z = 0; z < maxLayers; z++) {
-        for (let y = maxRows - 1; y >= 0; y--) {
-          for (let x = 0; x < maxCols; x++) {
-            const hue = (x * 28 + y * 35 + z * 55) % 360;
-            cube(x, y, z, `hsl(${hue} 82% 72%)`);
+      for (let z = 0; z < shownLayers; z++) {
+        for (let y = shownRows - 1; y >= 0; y--) {
+          for (let x = 0; x < shownCols; x++) {
+            const hue = (x * 27 + y * 39 + z * 51) % 360;
+            drawBox(
+              x * result.bl,
+              y * result.bw,
+              z * result.bh,
+              result.bl,
+              result.bw,
+              result.bh,
+              `hsla(${hue}, 85%, 68%, 0.95)`
+            );
           }
         }
       }
 
       ctx.fillStyle = '#17324f';
       ctx.font = '20px sans-serif';
-      ctx.fillText(`3D示意：${maxCols}列 × ${maxRows}排 × ${maxLayers}层`, 32, 48);
+      ctx.fillText(`真实比例3D：${shownCols}列 × ${shownRows}排 × ${shownLayers}层`, 28, 34);
       ctx.font = '16px sans-serif';
-      ctx.fillText(`实际排布：${result.cols}列 × ${result.rows}排 × ${result.layers}层`, 32, 74);
-      ctx.fillText(`当前只展示局部3D效果，便于给客户演示`, 32, 98);
+      ctx.fillText(`实际排布：${result.cols}列 × ${result.rows}排 × ${result.layers}层`, 28, 60);
+      ctx.fillText(`按真实长宽高比例绘制；为便于展示，仅截取前部局部视图`, 28, 84);
     }
 
     function drawSide(result) {
