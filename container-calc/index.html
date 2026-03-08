@@ -49,7 +49,7 @@
     button.secondary { background: rgba(255,255,255,.08); }
     .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
     .tips { font-size: 12px; color: var(--muted); line-height: 1.6; margin-top: 12px; }
-    .results { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+    .results { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
     .result-box { border: 1px solid var(--line); border-radius: 16px; padding: 14px; background: rgba(255,255,255,.03); }
     .result-box h3 { margin: 0 0 8px; font-size: 16px; }
     .big { font-size: 30px; font-weight: 800; color: #fff; }
@@ -120,6 +120,7 @@
 
       <div class="card">
         <div class="results" id="results"></div>
+        <div class="legend" id="selectedNotice" style="margin: -2px 0 14px; color:#9fb2d9;"></div>
         <div class="canvases">
           <div>
             <h2 class="section-title">3D 装箱演示图</h2>
@@ -139,13 +140,14 @@
 
   <script>
     const containers = [
-      { key: '20GP', name: '20GP', l: 5890, w: 2350, h: 2390, maxKg: 28200 },
+      { key: '20GP', name: '20GP / 小柜', l: 5890, w: 2350, h: 2390, maxKg: 28200 },
       { key: '40GP', name: '40GP', l: 12030, w: 2350, h: 2390, maxKg: 26500 },
-      { key: '40HQ', name: '40HQ', l: 12030, w: 2350, h: 2690, maxKg: 26500 },
-      { key: '小柜', name: '小柜(20GP)', l: 5890, w: 2350, h: 2390, maxKg: 28200 }
+      { key: '40HQ', name: '40HQ / 高柜', l: 12030, w: 2350, h: 2690, maxKg: 26500 }
     ];
 
     const ids = id => document.getElementById(id);
+    let currentResults = [];
+    let selectedContainerKey = '20GP';
 
     function permutations(dims) {
       const [a, b, c] = dims;
@@ -183,11 +185,16 @@
     }
 
     function renderResults(results) {
+      currentResults = results;
+      if (!results.find(r => r.container.key === selectedContainerKey)) {
+        selectedContainerKey = results[0]?.container.key || '20GP';
+      }
       ids('results').innerHTML = results.map(r => {
         const status = r.fits ? (r.weightLimited ? '受重量限制' : '可装') : '放不下';
         const cls = r.fits ? (r.weightLimited ? 'warn' : 'ok') : 'warn';
+        const active = r.container.key === selectedContainerKey;
         return `
-          <div class="result-box">
+          <div class="result-box" data-key="${r.container.key}" style="cursor:pointer; ${active ? 'outline:2px solid #4da3ff; box-shadow:0 0 0 3px rgba(77,163,255,.12) inset;' : ''}">
             <h3>${r.container.name}</h3>
             <div class="big">${r.total || 0} 件</div>
             <div class="meta ${cls}">${status}</div>
@@ -196,6 +203,13 @@
             <div class="meta">排布：${r.cols || 0} × ${r.rows || 0} × ${r.layers || 0}</div>
           </div>`;
       }).join('');
+      [...ids('results').querySelectorAll('.result-box')].forEach(el => {
+        el.addEventListener('click', () => {
+          selectedContainerKey = el.dataset.key;
+          renderResults(currentResults);
+          renderSelected();
+        });
+      });
     }
 
     function buildLoadedCells(result) {
@@ -349,6 +363,18 @@
       ctx.fillText(`侧视图按实际装载数量绘制，总计 ${result.total} 件`, 32, 32);
     }
 
+    function renderSelected() {
+      const selected = currentResults.find(r => r.container.key === selectedContainerKey) || currentResults[0];
+      drawIso(selected);
+      drawSide(selected);
+      ids('selectedNotice').innerHTML = selected ? `当前展示的是：<b>${selected.container.name}</b> 的真实比例装箱图。上方点哪个柜，下面就展示哪个柜。` : '';
+      ids('isoLegend').textContent = selected && selected.fits ? `${selected.container.name}：单层 ${selected.cols * selected.rows} 件，共 ${selected.layers} 层；总计 ${selected.total} 件。` : '暂无可视化结果';
+      ids('sideLegend').textContent = selected && selected.fits ? `摆放尺寸：${selected.bl} × ${selected.bw} × ${selected.bh} mm；总计 ${selected.total} 件。` : '暂无可视化结果';
+      ids('summary').innerHTML = selected && selected.fits
+        ? `当前展示柜型：<b>${selected.container.name}</b>。在当前规则下预计可装 <b>${selected.total} 件</b>，图示与该柜型结果保持一致。`
+        : `当前尺寸下标准柜装不下。请检查输入尺寸。`;
+    }
+
     function calculate() {
       const box = {
         l: parseFloat(ids('l').value || 0),
@@ -366,15 +392,10 @@
         return;
       }
       const results = containers.map(c => calcFor(c, box, mode, reserve));
-      renderResults(results);
       const best = results.slice().sort((a,b) => b.total - a.total)[0];
-      drawIso(best);
-      drawSide(best);
-      ids('isoLegend').textContent = best && best.fits ? `最优柜型：${best.container.name}；单层 ${best.cols * best.rows} 件，共 ${best.layers} 层。` : '暂无可视化结果';
-      ids('sideLegend').textContent = best && best.fits ? `摆放尺寸：${best.bl} × ${best.bw} × ${best.bh} mm；总计 ${best.total} 件。` : '暂无可视化结果';
-      ids('summary').innerHTML = best && best.fits
-        ? `推荐优先参考 <b>${best.container.name}</b>：在当前规则下预计可装 <b>${best.total} 件</b>。现在网站已支持 <b>mm 输入 + 3D 装箱演示</b>，更适合直接给客户看。`
-        : `当前尺寸下标准柜装不下。你输入的是 <b>${box.l} × ${box.w} × ${box.h} mm</b>，而标准柜内部宽高大约只有 <b>2350 × 2390/2690 mm</b>，所以结果是 0 件。`;
+      if (best) selectedContainerKey = best.container.key;
+      renderResults(results);
+      renderSelected();
     }
 
     ids('calc').addEventListener('click', calculate);
