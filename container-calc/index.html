@@ -277,8 +277,14 @@
         weight: parseFloat(ids('weight').value || 0)
       };
       const mode = ids('mode').value;
-      const reserve = parseFloat(ids('reserve').value || 0);
-      if (!box.l || !box.w || !box.h) return;
+      let reserve = parseFloat(ids('reserve').value);
+      if (Number.isNaN(reserve)) reserve = 0;
+      reserve = Math.max(0, Math.min(30, reserve));
+      ids('reserve').value = reserve;
+      if (!box.l || !box.w || !box.h) {
+        ids('summary').innerHTML = '请先完整输入货物长、宽、高。';
+        return;
+      }
       const results = containers.map(c => calcFor(c, box, mode, reserve));
       renderResults(results);
       const best = results.slice().sort((a,b) => b.total - a.total)[0];
@@ -288,7 +294,7 @@
       ids('sideLegend').textContent = best && best.fits ? `摆放尺寸：${best.bl} × ${best.bw} × ${best.bh} cm；总计 ${best.total} 件。` : '暂无可视化结果';
       ids('summary').innerHTML = best && best.fits
         ? `推荐优先参考 <b>${best.container.name}</b>：在当前规则下预计可装 <b>${best.total} 件</b>。如果你要，我后续还可以继续给这个网站加：<b>毛重校验、托盘模式、CBM统计、报价联动、导出 PDF 装箱单</b>。`
-        : '当前货物尺寸无法放入标准 20GP / 40GP / 40HQ，请检查尺寸或改为散货/特殊柜。';
+        : `当前尺寸下标准柜装不下。你输入的是 <b>${box.l} × ${box.w} × ${box.h} cm</b>，而标准柜内部宽高大约只有 <b>235 × 239/269 cm</b>，所以结果是 0 件。`;
     }
 
     ids('calc').addEventListener('click', calculate);
