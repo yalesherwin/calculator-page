@@ -121,10 +121,11 @@
       <div class="card">
         <div class="results" id="results"></div>
         <div class="legend" id="selectedNotice" style="margin: -2px 0 14px; color:#9fb2d9;"></div>
+        <div class="legend" style="margin-bottom:12px;color:#9fb2d9;">已升级为客户演示版：自动展示 <b>单层放大图 + 侧视图 + 正视图</b>，手机上更直观。</div>
         <div class="canvases" style="grid-template-columns: 1fr;">
           <div>
-            <h2 class="section-title">标准装箱图（俯视图）</h2>
-            <canvas id="topCanvas" width="720" height="320"></canvas>
+            <h2 class="section-title">标准装箱图（俯视单层放大图）</h2>
+            <canvas id="topCanvas" width="720" height="420"></canvas>
             <div class="legend" id="topLegend"></div>
           </div>
           <div>
@@ -261,12 +262,17 @@
         ctx.fillRect(x + 1, y + 1, result.bl * scale - 2, result.bw * scale - 2);
       }
 
-      const usedL = Math.min(result.total, result.cols * result.rows) > 0 ? Math.min(result.cols, Math.ceil(Math.min(result.total, result.cols * result.rows) / Math.max(result.rows,1))) * result.bl : 0;
-      const remainL = result.container.l - usedL;
+      const remainL = result.container.l - result.cols * result.bl;
       const remainW = result.container.w - result.rows * result.bw;
+      ctx.strokeStyle = '#ff6b6b';
+      ctx.setLineDash([6,4]);
+      if (remainL > 0) ctx.strokeRect(x0 + result.cols * result.bl * scale, y0, remainL * scale, result.rows * result.bw * scale);
+      if (remainW > 0) ctx.strokeRect(x0, y0 + result.rows * result.bw * scale, result.cols * result.bl * scale, remainW * scale);
+      ctx.setLineDash([]);
       ctx.fillStyle = '#17324f';
       ctx.font = '16px sans-serif';
-      ctx.fillText(`底层：${loadedCells.length} 件；尾部余长约 ${Math.max(0, remainL)} mm；侧边余宽约 ${Math.max(0, remainW)} mm`, 24, 24);
+      ctx.fillText(`单层 ${loadedCells.length} 件（${result.cols}列 × ${result.rows}排）；尾部余长 ${Math.max(0, remainL)} mm；侧边余宽 ${Math.max(0, remainW)} mm`, 24, 24);
+      ctx.fillText(`货物 ${result.bl} × ${result.bw} mm / 柜内 ${result.container.l} × ${result.container.w} mm`, 24, 46);
     }
 
     function drawSide(result) {
@@ -348,7 +354,7 @@
       drawSide(selected);
       drawFront(selected);
       ids('selectedNotice').innerHTML = selected ? `当前展示的是：<b>${selected.container.name}</b> 的标准装箱图。上方点哪个柜，下面就展示哪个柜。空白区域表示该柜未被货物占满，这是实际余量，不是画错。` : '';
-      ids('topLegend').textContent = selected && selected.fits ? `${selected.container.name}：底层 ${selected.cols * selected.rows} 件；总计 ${selected.total} 件。` : '暂无可视化结果';
+      ids('topLegend').textContent = selected && selected.fits ? `${selected.container.name}：这里显示的是单层放大图，底层 ${selected.cols * selected.rows} 件；整柜总计 ${selected.total} 件。` : '暂无可视化结果';
       ids('sideLegend').textContent = selected && selected.fits ? `摆放尺寸：${selected.bl} × ${selected.bw} × ${selected.bh} mm；总计 ${selected.total} 件。` : '暂无可视化结果';
       ids('frontLegend').textContent = selected && selected.fits ? `正视图显示宽度方向 ${selected.rows} 排、垂直方向 ${selected.layers} 层。` : '暂无可视化结果';
       ids('summary').innerHTML = selected && selected.fits
